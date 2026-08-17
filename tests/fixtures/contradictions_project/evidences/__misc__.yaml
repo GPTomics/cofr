@@ -1,0 +1,24 @@
+- id: ev_con
+  type: evidence
+  evidence_type: experiment_result
+  strength: high
+  summary: A holdout evaluation result that opposes the conflicted claim.
+  claim_links:
+    - claim_id: claim_conflict
+      polarity: opposes
+- id: ev_falsification
+  type: evidence
+  evidence_type: paper_note
+  strength: medium
+  summary: An observation bearing directly on the pre-committed falsification condition.
+  claim_links:
+    - claim_id: claim_falsifiable
+      polarity: supports
+- id: ev_pro
+  type: evidence
+  evidence_type: experiment_result
+  strength: medium
+  summary: An experiment result that supports the conflicted claim.
+  claim_links:
+    - claim_id: claim_conflict
+      polarity: supports

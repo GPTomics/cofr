@@ -1,0 +1,8 @@
+- id: risk_overstatement
+  type: risk
+  statement: The project narrative overstates the strength of the current evidence.
+  severity: high
+  status: open
+  related_claim_ids:
+    - claim_conflict
+  recommended_resolution: Rewrite the summary so the language matches what the evidence shows.

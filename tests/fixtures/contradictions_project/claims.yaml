@@ -1,0 +1,19 @@
+- id: claim_conflict
+  type: claim
+  title: Conflicted claim
+  status: provisionally_supported
+  confidence: medium
+  statement: Evidence is split on whether this claim holds.
+- id: claim_falsifiable
+  type: claim
+  title: Falsifiable claim
+  status: provisionally_supported
+  confidence: medium
+  statement: This claim carries an explicit, pre-committed falsification condition.
+  what_would_change_my_mind: A controlled ablation showing no measurable effect once the input is removed.
+- id: claim_orphan
+  type: claim
+  title: Orphan claim
+  status: supported
+  confidence: high
+  statement: This claim is asserted as supported with no evidence linking to it.

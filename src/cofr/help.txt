@@ -1,0 +1,814 @@
+=== top ===
+cofr -- agent-first epistemic state engine
+
+What it does:
+  cofr tracks structured beliefs, evidence, decisions, open questions, risks,
+  and staleness flags across long-horizon technical work. The primary consumer
+  is an AI agent; cofr provides structured state and agents provide narrative
+  on top.
+
+Ownership:
+  The human directs and corrects judgment and decides what is worth tracking.
+  The agent reads sources, interprets them, authors records, and explains state.
+  cofr validates, tracks history, computes mechanical checks, and generates
+  deterministic inspection surfaces. Source files never move state by themselves.
+
+Operating workflows:
+  Onboard: Read `cofr --help`, inspect the project's sources, run `cofr init`,
+    set the project objective in `.cofr/config.yaml`, then preview the first
+    records with `cofr add --dry-run` before adding them. Establish at least the
+    central Claim, Question, or Decision frame before deeper work.
+
+  Ingest: When a source is added or changed, read the source itself. Decide
+    which Claims, Evidence, Decisions, Questions, Risks, or Experiments it
+    touches. Put observations/results in source-linked Evidence, update durable
+    interpretations in the appropriate records, refresh, then inspect the diff.
+    Unstructured source content is context; it never mutates canonical state.
+
+  Review: Start a session from the maintained surfaces before opening raw
+    sources broadly:
+      cofr show state --json .
+      cat .cofr/index.json
+      cofr show diff --json .
+    Then use the focused overview, risk, tension, and decision surfaces as needed.
+    If review discovers a durable tracking change, write it into a structured
+    record and refresh; do not leave it only in chat, a memo, or narrative prose.
+
+  Evolve: When judgment changes, edit the affected structured records, preserve
+    Evidence and Decision linkages, and refresh so the movement appears in
+    history and diff. Claims may be narrowed, split, rewritten, retired, or
+    replaced; use `cofr rename` whenever a stable id changes.
+
+Mechanical lifecycle:
+  1. cofr init [<path>]                       # initialize maintained state
+  2. cofr add --dry-run [<path>] < object.md  # preview without mutation
+  3. cofr add [<path>] < object.md            # author a structured record
+  4. cofr refresh [<path>]                    # after direct record/source edits
+  5. cofr show state --json [<path>]          # query full state in one call
+
+Concepts:
+  cofr tracks six user-authored object types. `cofr add` accepts a markdown
+  document on stdin with YAML frontmatter declaring `type: <typename>`, then
+  writes the record into the YAML pack layout:
+
+    claim       A currently active belief or working hypothesis.
+    evidence    An artifact that should update beliefs (paper note, experiment
+                result, observation, etc.). Evidence owns the claim-evidence link
+                via its `claim_links` field; claims never list evidence IDs.
+    experiment  A specific run, analysis, or test. Informational metadata only --
+                does not move claim status by itself; use evidence for that.
+    decision    A project-level call that shapes work. Declares which claims it
+                depends on, so it can be flagged when those claims erode.
+    question    A materially unresolved question blocking progress, with a
+                priority and a proposed minimum test.
+    risk        An explicit tension or risk in the project state.
+
+  All objects carry stable IDs (UUIDs or explicit slugs). Cross-references use
+  those IDs. Files without recognized frontmatter are read for ID-mention
+  scanning but never modify canonical state -- structured inputs only.
+
+Commands:
+  init             Initialize cofr in a project directory.
+  add              Write a structured object (frontmatter+body via stdin),
+                   place it correctly, refresh, and report any warnings.
+  refresh          Re-scan project, update state, regenerate artifacts.
+                   --rebuild-timelines repairs claim timelines;
+                   --rebuild-renames-log repairs the confirmed rename log.
+  rename           Rename an id; cascades typed pointers across packs.
+  migrate          --rollback to revert a v1->v2 migration.
+  show state       Print full state. Use --json for agent consumption.
+  show claims      Print active claims. --json, --summary, and --all supported.
+  show questions   Print open questions. --json, --summary, and --all supported.
+  show diff        Print last-refresh diff. JSON wraps the sidecar.
+  show overview    Structured briefing (counts, trends, top items).
+  show risks       Print user-authored and computed risks.
+  show contradictions
+                   Print computed contradictions and the falsification review.
+  show review      Print the ranked next-decision recommendation.
+
+Each subcommand has its own --help with a full briefing -- run it.
+
+Files cofr writes:
+  .cofr/state.json        structured state + generated Artifact paths
+  .cofr/index.json        source/record inventory + metadata + ID mentions
+  .cofr/config.yaml       project config (project_name, project_objective, ...)
+  .cofr/history/*.json    pre-refresh snapshots
+  .cofr/last_diff.json    latest state movement since the prior refresh
+  artifacts/*.md          deterministic inspection surfaces, not source truth
+  claims.yaml, decisions.yaml, questions.yaml, risks.yaml, experiments.yaml
+                          packs for non-evidence records
+  evidences/<slug>.yaml   evidence packs, grouped by source
+
+JSON envelope:
+  Every --json output is wrapped with: schema_version, cofr_version,
+  generated_at, project_path, data. Empty results include a `_note` field with
+  a fixed parseable string -- never bare []. `_warnings` appears at envelope
+  level when load_state surfaced normalized enum issues from state.json.
+
+Exit codes:
+  0  success
+  1  soft warnings (parse warnings, broken refs, empty results) -- agent should investigate
+  2  argparse usage error
+  3  project not initialized (run `cofr init`)
+  4  corrupt derived state/index, or an unrecoverable persistence failure
+
+Example:
+  cofr init ~/my-project
+  cat my_claim.md | cofr add ~/my-project
+  cofr show state --json ~/my-project
+
+Run `cofr --version` for the running version.
+
+=== init ===
+cofr init -- initialize cofr in a project directory
+
+What it does:
+  Creates .cofr/ inside the target directory with an empty state.json, empty
+  index.json, default config.yaml (project_name defaults to the directory name;
+  project_objective starts empty), and a history/ subdirectory. Also creates
+  artifacts/ in the project root if not
+  present.
+
+When to run:
+  Once per project. Run before the first `cofr add` or `cofr refresh`.
+
+When NOT to run:
+  cofr init is idempotent -- if .cofr/ already exists it does nothing. You do
+  not need to "re-init" after upgrades.
+
+Arguments:
+  project_path    Directory to initialize. Defaults to current working directory.
+
+Exit codes:
+  0  success or already initialized
+  2  project_path does not exist
+
+Example:
+  cofr init ~/my-project
+
+=== add ===
+cofr add -- write a structured object (claim/evidence/decision/question/risk/experiment)
+
+What it does:
+  Reads a complete markdown document from stdin (YAML frontmatter + body),
+  parses the frontmatter to determine `type:` and `id:`, appends or replaces
+  one record in the routed YAML pack (`claims.yaml`, `questions.yaml`,
+  `evidences/<source>.yaml`, etc.), then runs `cofr refresh` to ingest and validate.
+  Reports any warnings produced by the refresh.
+
+  Agents producing valid frontmatter get a one-shot path; warnings still
+  surface if the document is structurally wrong (unknown type, malformed YAML,
+  duplicate id, broken reference).
+
+  For a material addition or replacement, run the same input through
+  `cofr add --dry-run` first. The JSON preview exposes the normalized candidate
+  record and existing occurrences without writing or refreshing. Its output
+  includes the routed pack, warnings, and collisions. It previews the
+  record-level mutation, not the later refresh's computed state or artifacts.
+
+When to run:
+  Whenever you (or an agent) want to add a new structured object. For editing
+  an existing object, edit its file directly and run `cofr refresh`.
+
+When NOT to run:
+  When the markdown's `type:` isn't one of: claim, evidence, experiment,
+  decision, question, risk.
+
+Arguments:
+  project_path    Project directory (default: current working directory).
+  --at <path>     Override placement; path is interpreted relative to
+                  project_path. cofr add refuses to write outside the project
+                  (paths that resolve outside, including absolute paths and
+                  parent-directory escapes, exit with code 2).
+  --dry-run       Preview the normalized candidate record. Returns its routed
+                  pack, warnings, and collisions; does not write or refresh.
+  --force         Replace an existing record with the same id when collision
+                  is in the SAME target pack (overwrite-in-place), or recycle
+                  a non-live state-only record (no disk presence) by clearing
+                  it before append. Refuses cross-pack collisions and live
+                  state-only collisions even with --force -- use cofr rename
+                  to relocate. By default (no --force), any id collision
+                  refuses with the occurrence list printed to stderr.
+
+Stdin:
+  Full markdown content -- YAML frontmatter (between `---` delimiters) plus
+  body sections. ID-derivation rules: explicit string `id:` in frontmatter wins;
+  else cofr slugifies `title:` if present; else it may use the type's primary
+  field (`question`, `summary`, `name`, or `statement`) before falling back to a
+  short uuid. Derived ids are written into the YAML pack record, so subsequent
+  refreshes see a stable id and do not regenerate one.
+
+Authoring depth:
+  Preserve technical depth whenever the source material provides it. A Claim
+  should capture the strongest specific proposition currently supportable,
+  including governing equations in Markdown/LaTeX, quantitative predictions or
+  bounds, assumptions, scope, and boundary conditions; define every symbol near
+  the equation. Put observations and results in Evidence records and use them to
+  support or oppose the Claim. Never invent precision that is absent from the
+  sources, but do not collapse available technical content into a superficial
+  one-line paraphrase. Short qualitative Claims are appropriate only when the
+  available material is itself qualitative.
+
+Exit codes:
+  0  success, no warnings
+  1  validation warnings during refresh
+  2  usage error (missing type, malformed YAML, file collision without --force)
+  3  not initialized
+  4  corrupt state
+
+Examples:
+
+  Preview any example below before committing it:
+
+    cofr add --dry-run ~/my-project < object.md
+    cofr add ~/my-project < object.md
+
+  Claim (technically specific):
+
+    cat << 'EOF' | cofr add ~/my-project
+    ---
+    type: claim
+    id: claim_action_conditioning
+    status: provisionally_supported
+    confidence: medium
+    ---
+
+    ## Title
+
+    Action-conditioning improves predictive quality
+
+    ## Statement
+
+    For a fixed model and validation slice, conditioning on actions lowers
+    held-out negative log-likelihood:
+
+    $$
+    \Delta_{\mathrm{NLL}} =
+      \mathrm{NLL}(x_{t+1}\mid x_{\le t}, a_{\le t}) -
+      \mathrm{NLL}(x_{t+1}\mid x_{\le t}) < 0,
+    $$
+
+    where $x_t$ is the observation at step $t$ and $a_t$ is its action. The
+    claim is limited to the current data distribution and matched training
+    budgets; it does not claim improved out-of-distribution performance.
+
+    ## Main support
+
+    Evidence record ev_action_v3 reports a mean delta NLL of -0.12 nats/token
+    across five seeds under matched training budgets.
+
+    ## Main weakness
+
+    The effect shrinks on v4 and has not been reproduced out of distribution.
+
+    ## What would change my mind
+
+    A preregistered matched-budget evaluation whose 95% confidence interval for
+    delta NLL includes zero on both the current and shifted validation slices.
+    EOF
+
+  Evidence (owns the claim-evidence link via `## Affects claims`):
+
+    cat << 'EOF' | cofr add ~/my-project
+    ---
+    type: evidence
+    id: ev_holdout_drop
+    evidence_type: experiment_result
+    strength: high
+    created_at: 2026-04-12
+    source_path: reports/v4_holdout.md
+    source_title: V4 held-out evaluation
+    source_anchors:
+      - section: Results
+        line: 42
+    ---
+
+    ## Summary
+
+    On the v4 held-out slice, action-conditioned predictions did not outperform
+    the action-free baseline, contrary to the v3 result.
+
+    ## Affects claims
+
+    - claim_action_conditioning: opposes
+    EOF
+
+  Decision (declares which claims it depends on):
+
+    cat << 'EOF' | cofr add ~/my-project
+    ---
+    type: decision
+    id: dec_deprioritize_scaling
+    timestamp: 2026-04-22
+    ---
+
+    ## Title
+
+    Deprioritize parameter scaling for v4 regression work
+
+    ## Decision statement
+
+    No further 2x+ parameter ablations this quarter.
+
+    ## Depends on claims
+
+    - claim_scaling_priority
+
+    ## Reopen conditions
+
+    An architecture-side intervention fails to close the gap.
+    EOF
+
+  Open question:
+
+    cat << 'EOF' | cofr add ~/my-project
+    ---
+    type: question
+    id: q_holdout_robustness
+    priority: high
+    ---
+
+    ## Question
+
+    Is the v3-to-v4 effect drop distribution shift or genuine erosion?
+
+    ## Related claims
+
+    - claim_action_conditioning
+
+    ## Minimum test
+
+    Construct a matched-distribution v4 subset and rerun the comparison.
+    EOF
+
+  Risk:
+
+    cat << 'EOF' | cofr add ~/my-project
+    ---
+    type: risk
+    id: risk_eval_methodology
+    severity: medium
+    ---
+
+    ## Statement
+
+    If the eval methodology has a systematic flaw, several v3/v4 comparisons
+    are unreliable.
+
+    ## Related claims
+
+    - claim_action_conditioning
+
+    ## Recommended resolution
+
+    Audit the held-out splitting procedure.
+    EOF
+
+  Experiment (note: `affected_claim_ids` is informational only -- to move a
+  claim's status, author a separate `type: evidence` file):
+
+    cat << 'EOF' | cofr add ~/my-project
+    ---
+    type: experiment
+    id: exp_v4_scaling_2x
+    timestamp: 2026-04-20
+    ---
+
+    ## Name
+
+    V4 eval: 2x parameter scaling
+
+    ## Intent
+
+    Test whether pure parameter scaling closes the v4 regression gap.
+
+    ## Result summary
+
+    Closed <10% of the gap, contradicting the scaling-curve extrapolation.
+
+    ## Affected claims
+
+    - claim_scaling_priority
+    EOF
+
+Enums (cofr defaults invalid values to the middle and warns):
+  claim.status        supported | provisionally_supported (default) | mixed |
+                      unsupported | retired
+  claim.confidence    low | medium (default) | high
+  evidence.type       experiment_result | paper_note |
+                      manual_observation (default) | report_section |
+                      agent_summary
+  evidence.strength   low | medium (default) | high
+  evidence.status     active (default) | deprecated
+  decision.status     active (default) | deprecated
+  experiment.status   active (default) | deprecated
+  question.priority   low | medium (default) | high | critical
+  question.blocking_severity
+                      low | medium (default) | high  (defaults to priority when
+                      omitted; critical priority -> high severity)
+  question.status     open (default) | in_progress | resolved | deprioritized
+  risk.severity       low | medium (default) | high
+  risk.status         open (default) | mitigated | accepted | resolved
+  risk.source         authored (default). `computed` is reserved for transient
+                      risks emitted by cofr and is not an authoring value.
+
+Deactivation: set the type's `status` to `retired` (claim) or `deprecated`
+(evidence/decision/experiment) or `resolved`/`deprioritized` (question) or
+`mitigated`/`resolved` (risk). Authoring `stale: true` directly is system-only
+and is bounced with a warning. If a claim disappears from a successfully parsed
+source, cofr retires it and exposes system-managed `source_missing: true`; this
+distinguishes source deletion from intentional retirement.
+
+Polarity defaults: an `## Affects claims` entry without `: <polarity>` defaults
+to `supports`. Polarity values: supports, opposes.
+
+=== refresh ===
+cofr refresh -- re-scan project, update state, regenerate artifacts
+
+What it does:
+  Snapshots the current state to .cofr/history/, walks all files in the project
+  directory (respecting .gitignore and hardcoded excludes), classifies them,
+  parses structured Markdown and YAML packs into domain objects, extracts
+  text/metadata from PDFs, images, DOCX, and XLSX, scans readable content for
+  ID mentions, applies parsed records to state with the idempotency contract
+  (unchanged objects preserve timestamps), and regenerates all four artifacts:
+  current_state.md, what_changed.md, contradictions.md, and next_decision.md.
+
+When to run:
+  After authoring or editing structured files. `cofr add` calls refresh
+  automatically, so a manual refresh is only needed after direct edits.
+
+When NOT to run:
+  When you have not initialized the project (run `cofr init` first). When you
+  are mid-edit and the files are not in a coherent state.
+
+Arguments:
+  project_path    Directory to refresh. Defaults to current working directory.
+  --json          Emit a machine-readable envelope on stdout including the diff
+                  plus full updated state (one call for everything an agent needs).
+  --rebuild-timelines
+                  Rebuild derived claim confidence/status timelines from
+                  .cofr/history snapshots.
+  --rebuild-renames-log
+                  Re-derive .cofr/renames.json from history snapshots for crash
+                  recovery.
+
+Output shape (--json):
+  {
+    "schema_version": 1, "cofr_version": "...", "generated_at": "...",
+    "project_path": "...", "data": {
+      "summary": {"files_scanned": N, "structured": M, "pack_files": P,
+                  "structured_records": R, "skipped": K, "warnings_count": W},
+      "changes": {"new": [...], "updated": [...], "removed": [...]},
+      "diff": {"added": [...], "modified": [...], "removed": [...],
+               "renamed": [...], "broken_references": [...],
+               "refresh_summary": {...}, "generated_at": "..."},
+      "warnings": [...],
+      "late_warnings": [...],
+      "broken_references": [...],
+      "state": { ...agent-complete state matching `show state --json`... }
+    }
+  }
+  `state` is the same shape `show state --json` returns -- enriched claims
+  with mentioned_in plus _index_summary and _index_mentions -- so a single
+  refresh call is sufficient for full graph reconstruction.
+
+Exit codes:
+  0  success, no warnings
+  1  soft warnings (parse errors, broken refs, duplicate IDs)
+  3  not initialized
+  4  corrupt state or index
+
+Example:
+  cofr refresh ~/my-project
+  cofr refresh --json ~/my-project | jq '.data.warnings'
+
+=== show ===
+cofr show -- query cofr state
+
+Subcommands:
+  show state    Print the full canonical state (preferred entry point for agents).
+  show claims   Print active claims with computed evidence counts and mentions.
+  show questions
+                Print live open questions. Use --all for resolved/deprioritized/stale.
+  show diff     Print the cached last-refresh diff or wrap it as JSON.
+  show overview Structured briefing with counts, trends, stale flags, and top items.
+  show risks    Print user-authored and computed (transient) risks.
+  show contradictions
+                Print computed contradictions plus the agent-judged falsification review.
+  show review   Print the ranked next-decision recommendation.
+
+Each subcommand has its own --help.
+
+=== show_state ===
+cofr show state -- print the full canonical state
+
+What it does:
+  Emits everything cofr knows about the project: claims, evidence, experiments,
+  decisions, open questions, risks, artifacts, plus an index summary. The
+  primary single-call entry point for an agent that wants the full picture.
+
+When to run:
+  Whenever an agent wants the current epistemic state. After a refresh, use it
+  as input for agent-authored narrative summaries.
+
+When NOT to run:
+  When you need only claims (use `cofr show claims`).
+
+Arguments:
+  project_path    Directory to query. Defaults to current working directory.
+  --json          Machine-readable envelope on stdout (recommended for agents).
+
+Output shape (--json):
+  Envelope's `data` is the full state JSON plus:
+    - each claim is enriched with `supporting_evidence_count`,
+      `counter_evidence_count`, and `mentioned_in` (paths whose id_mentions
+      referenced the claim).
+    - `_index_summary`: {classification -> count}
+    - `_index_mentions`: {path -> [id, ...]} for every file with ID mentions
+  Empty state includes a `_note` string describing how to create structured
+  files. If `state.json` had invalid persisted enum values, `_warnings` lists
+  the values that were normalized (and the command exits 1, soft warning).
+  show state and refresh emit the same agent-complete state shape -- one call
+  is enough to reconstruct the full epistemic graph.
+
+Exit codes:
+  0  success
+  1  empty state, or persisted enums were normalized (soft warning)
+  3  not initialized
+  4  corrupt state
+
+Example:
+  cofr show state --json ~/my-project
+  cofr show state --json ~/my-project | jq '.data.claims | length'
+
+=== show_claims ===
+cofr show claims -- print active claims
+
+What it does:
+  Lists non-retired claims (retired claims are filtered by default). With
+  --json, includes computed fields per claim: supporting_evidence_count,
+  counter_evidence_count, mentioned_in. With --summary, the per-claim payload
+  is slimmed to id, title, status, confidence, and the two counts -- useful
+  for large projects or quick scans.
+
+When to run:
+  Quick claim audit. As input to a focused review. When you want counts without
+  reading the full state.
+
+When NOT to run:
+  When you need the full graph (use `cofr show state`).
+
+Arguments:
+  project_path    Directory to query. Defaults to current working directory.
+  --json          Machine-readable envelope on stdout.
+  --summary       Slim per-claim payload (no prose, no extra_sections, no timestamps).
+  --all           Include retired claims. Default output includes only live claims.
+
+Output shape (--json):
+  Envelope's `data` is {"claims": [...]}. Empty state includes `_note`. If
+  state.json had invalid persisted enum values, `_warnings` appears in the
+  envelope and the command exits 1.
+
+Exit codes:
+  0  success
+  1  no claims, or persisted enums were normalized (soft warning)
+  3  not initialized
+  4  corrupt state
+
+Example:
+  cofr show claims --json --summary ~/my-project
+
+=== show_questions ===
+Show open questions in the project.
+
+What:
+  Lists live OpenQuestion records (status in {open, in_progress}).
+
+When to run:
+  When you want the open-question backlog -- what is unresolved and how it
+  ranks by priority and blocking severity.
+
+When NOT to run:
+  When you want only the single highest-value next step (use `cofr show review`).
+
+Arguments:
+  project_path    Directory to query. Defaults to current working directory.
+  --json          Machine-readable envelope on stdout.
+  --summary       Slim per-question payload.
+  --all           Include resolved, deprioritized, and stale questions. Default
+                  output includes only live questions.
+
+Output shape (--json):
+  Envelope's `data` is {"questions": [...]}. Full entries include related_claims
+  details for live related claims. With --summary, each entry is {id,
+  question_summary, priority, blocking_severity, status, stale, related_claim_ids}.
+
+Exit codes:
+  0  success
+  1  empty result (no live questions), or persisted enums were normalized
+  2  project on schema v1 (run `cofr refresh` first)
+  3  not initialized
+  4  corrupt state
+
+=== show_diff ===
+Show the cached diff from the most recent refresh.
+
+What:
+  Reads `.cofr/last_diff.json` (the flat diff dict produced by `cofr refresh`).
+  With --json, wraps the sidecar under `envelope.data.diff`.
+  Without --json, prints `artifacts/what_changed.md`.
+
+When NOT to run:
+  When no `cofr refresh` has run on a v2 project yet -- the sidecar is absent
+  and the command refuses with exit 2.
+
+Output shape (--json):
+  Envelope's `data` is {"diff": <flat dict>}; the diff includes added,
+  modified, removed, renamed, broken_references, refresh_summary, and generated_at.
+
+=== show_overview ===
+Show a structured project briefing.
+
+What:
+  Aggregates live/non-live counts per type, recent_changes from the cached
+  sidecar, confidence_trends, status_trends, staleness_flags, top_questions,
+  and top_risks into a single envelope.
+
+When to run:
+  Agent briefings. Before drafting a status report.
+
+Output shape (--json):
+  Envelope's `data` carries project_summary, recent_changes, confidence_trends,
+  status_trends, staleness_flags, top_questions, top_risks. When no diff
+  sidecar is present yet, recent_changes is null and `_note` explains.
+
+=== show_risks ===
+Show risks: user-authored plus computed contradiction risks.
+
+What:
+  Lists Risk records. Authored risks (type: risk) come from state; computed
+  risks are derived fresh from the contradiction rules on each call and are
+  never persisted. Every entry carries a `source` field (authored or computed).
+
+When to run:
+  When you want the project's risk register -- user-authored risks plus the
+  contradiction rules' computed risks -- before a status review or a go/no-go call.
+
+When NOT to run:
+  When you want the raw contradiction records behind the computed risks (use
+  `cofr show contradictions`).
+
+Arguments:
+  project_path    Directory to query. Defaults to current working directory.
+  --json          Machine-readable envelope on stdout.
+  --summary       Slim per-risk payload (id, statement_summary, severity,
+                  status, source, related ids).
+  --all           Include mitigated/resolved/stale authored risks. Computed
+                  risks are always shown in full; --all only widens authored.
+
+Output shape (--json):
+  Envelope's `data` is {"risks": [...], "warnings": [...]}, with risks sorted
+  by (source, id).
+
+Exit codes:
+  0  success
+  1  empty result, persisted enums normalized, config warnings, or a
+     computed-risk warning (e.g. an unparseable timestamp raised by a rule).
+     Computed-risk warnings print to stderr in non-JSON mode and to
+     data.warnings under --json.
+  2  project on schema v1 (run `cofr refresh` first)
+  3  not initialized
+  4  corrupt state
+
+Example:
+  cofr show risks --json .
+
+=== show_contradictions ===
+Show computed contradictions and the falsification review surface.
+
+What:
+  Runs the five mechanical contradiction rules over current state (evidence
+  conflict, eroded confidence, orphaned assumption, decision basis eroded,
+  claim unchanged) and assembles the agent-judged falsification review.
+
+When to run:
+  To surface epistemic tensions before a status review or a decision.
+
+When NOT to run:
+  When you want the severity-ranked risk list (use `cofr show risks`) or the
+  ranked next decision (use `cofr show review`).
+
+The falsification review is agent-judged:
+  cofr pairs each claim's `what_would_change_my_mind` text with its linked
+  evidence and issues NO verdict. Whether any evidence actually meets a
+  falsification condition is a judgment you (the agent) make -- cofr only
+  surfaces the material so it cannot be missed.
+
+Arguments:
+  project_path    Directory to query. Defaults to current working directory.
+  --json          Machine-readable envelope on stdout. Without it, prints the
+                  rendered artifacts/contradictions.md body.
+
+Output shape (--json):
+  Envelope's `data` carries contradictions (dict keyed by rule),
+  falsification_review (list), computed_risks (list -- the rule-1-5
+  contradictions projected into Risk records, each with a severity),
+  authored_risks (list), and warnings (list -- config and detection
+  warnings). The non-JSON body renders the same computed-contradictions,
+  falsification-review, computed-risks, and user-risks sections. `_note`
+  appears only when contradictions, falsification_review, and authored_risks
+  are all empty.
+
+Exit codes:
+  0  success
+  1  no contradictions detected, persisted enums normalized, config warnings, a
+     contradiction-detection warning (e.g. an unparseable timestamp raised by a
+     rule), or a computed-risk warning (e.g. a computed-risk id collision).
+     Warnings print to stderr in non-JSON mode and to data.warnings under --json.
+  2  project on schema v1 (run `cofr refresh` first)
+  3  not initialized
+  4  corrupt state
+
+Example:
+  cofr show contradictions --json .
+
+=== show_review ===
+Show the ranked next-decision recommendation.
+
+What:
+  Ranks open questions and decisions with eroded basis by a transparent
+  scoring formula and returns the top candidate plus runner-ups.
+
+When to run:
+  At the start of a planning cycle, when you need the single highest-value
+  next decision.
+
+When NOT to run:
+  When you want every open question unranked (use `cofr show questions`) or the
+  contradictions behind the ranking (use `cofr show contradictions`).
+
+The ranking is a scaffold, not a verdict:
+  cofr ranks mechanically and exposes the formula in `ranking_rationale`. You
+  (the agent) make the final recommendation, narrating over the scaffold.
+
+Arguments:
+  project_path    Directory to query. Defaults to current working directory.
+  --json          Machine-readable envelope on stdout. Without it, prints the
+                  rendered artifacts/next_decision.md body.
+
+Output shape (--json):
+  Envelope's `data` carries top_decision (or null), runner_ups (up to 3),
+  ranking_rationale (the formula plus a per-candidate score breakdown), and
+  warnings (list -- config and detection warnings).
+
+Exit codes:
+  0  success
+  1  nothing to recommend, persisted enums normalized, config warnings, or a
+     ranking-detection warning (e.g. an unparseable timestamp raised by a rule).
+     Detection warnings print to stderr in non-JSON mode and to
+     data.warnings under --json.
+  2  project on schema v1 (run `cofr refresh` first)
+  3  not initialized
+  4  corrupt state
+
+Example:
+  cofr show review .
+
+=== migrate ===
+Migration management.
+
+What:
+  --rollback reverts a migration. Three modes:
+  A) Plain `cofr migrate --rollback` works when an in-progress marker exists.
+  B) Marker + state.json missing: requires `--from-history <snapshot>
+     --yes-i-know-what-im-doing`.
+  C) No marker (post-commit regret): requires `--from-history <snapshot>
+     --yes-i-know-what-im-doing`.
+
+Arguments:
+  --rollback                          Undo a migration.
+  --from-history <snapshot>           Snapshot path for case B/C.
+  --yes-i-know-what-im-doing          Confirm destructive rollback (case B/C).
+  project_path                        Project to operate on.
+
+=== rename ===
+Rename a record id and cascade typed pointers.
+
+What:
+  Writes `.cofr/pending_renames.json`, edits the on-disk pack (swap old_id ->
+  new_id), then invokes `cofr refresh`. Cascade rewrites typed pointers in
+  state and packs. Logs the confirmed rename to `.cofr/renames.json`.
+
+When NOT to run:
+  When `.cofr/pending_renames.json` already exists (refuses; finish previous
+  rename first by running `cofr refresh`). When old_id is non-live in state
+  (unless fingerprint-confirm mode applies).
+
+Arguments:
+  old_id           Current id (must exist in state).
+  new_id           Target id (must match [A-Za-z0-9_-]+).
+  project_path     Project to operate on.
+
+Example:
+  cofr rename claim_old claim_new ./my-project

@@ -1,0 +1,62 @@
+{
+  "cofr_version": "0.4.0",
+  "data": {
+    "risks": [
+      {
+        "extra_sections": {},
+        "first_seen": "<TIMESTAMP>",
+        "id": "risk_overstatement",
+        "last_updated": "<TIMESTAMP>",
+        "parsed_from": "risks.yaml#risk_overstatement",
+        "recommended_resolution": "Rewrite the summary so the language matches what the evidence shows.",
+        "related_claim_ids": [
+          "claim_conflict"
+        ],
+        "related_decision_ids": [],
+        "severity": "high",
+        "source": "authored",
+        "stale": false,
+        "statement": "The project narrative overstates the strength of the current evidence.",
+        "status": "open"
+      },
+      {
+        "extra_sections": {},
+        "first_seen": "",
+        "id": "risk_computed_evidence_conflict_claim_conflict",
+        "last_updated": "",
+        "parsed_from": "",
+        "recommended_resolution": "",
+        "related_claim_ids": [
+          "claim_conflict"
+        ],
+        "related_decision_ids": [],
+        "severity": "high",
+        "source": "computed",
+        "stale": false,
+        "statement": "claim claim_conflict has 1 supporting and 1 opposing live evidence record(s)",
+        "status": "open"
+      },
+      {
+        "extra_sections": {},
+        "first_seen": "",
+        "id": "risk_computed_orphaned_assumption_claim_orphan",
+        "last_updated": "",
+        "parsed_from": "",
+        "recommended_resolution": "",
+        "related_claim_ids": [
+          "claim_orphan"
+        ],
+        "related_decision_ids": [],
+        "severity": "low",
+        "source": "computed",
+        "stale": false,
+        "statement": "claim claim_orphan has status supported but zero live evidence linking to it",
+        "status": "open"
+      }
+    ],
+    "warnings": []
+  },
+  "generated_at": "<TIMESTAMP>",
+  "project_path": "<PROJECT_PATH>",
+  "schema_version": 1
+}

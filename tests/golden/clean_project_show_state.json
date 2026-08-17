@@ -1,0 +1,387 @@
+{
+  "cofr_version": "0.4.0",
+  "data": {
+    "_index_mentions": {
+      "notes/scratch.md": [
+        "claim_action_conditioning"
+      ],
+      "papers/short_paper.pdf": [
+        "claim_drift_barrier"
+      ]
+    },
+    "_index_summary": {
+      "content_extracted": 1,
+      "structured": 12,
+      "unstructured": 3
+    },
+    "artifacts": [
+      {
+        "artifact_type": "current_state",
+        "covers_claim_ids": [
+          "claim_action_conditioning",
+          "claim_drift_barrier",
+          "claim_scaling_priority"
+        ],
+        "generated_at": "<TIMESTAMP>",
+        "id": "artifact_current_state",
+        "path": "artifacts/current_state.md",
+        "stale_because": "",
+        "staleness_status": "current"
+      },
+      {
+        "artifact_type": "what_changed",
+        "covers_claim_ids": [
+          "claim_action_conditioning",
+          "claim_drift_barrier",
+          "claim_scaling_priority"
+        ],
+        "generated_at": "<TIMESTAMP>",
+        "id": "artifact_what_changed",
+        "path": "artifacts/what_changed.md",
+        "stale_because": "",
+        "staleness_status": "current"
+      },
+      {
+        "artifact_type": "contradictions",
+        "covers_claim_ids": [
+          "claim_action_conditioning",
+          "claim_drift_barrier",
+          "claim_scaling_priority"
+        ],
+        "generated_at": "<TIMESTAMP>",
+        "id": "artifact_contradictions",
+        "path": "artifacts/contradictions.md",
+        "stale_because": "",
+        "staleness_status": "current"
+      },
+      {
+        "artifact_type": "next_decision",
+        "covers_claim_ids": [
+          "claim_action_conditioning",
+          "claim_drift_barrier",
+          "claim_scaling_priority"
+        ],
+        "generated_at": "<TIMESTAMP>",
+        "id": "artifact_next_decision",
+        "path": "artifacts/next_decision.md",
+        "stale_because": "",
+        "staleness_status": "current"
+      }
+    ],
+    "claims": [
+      {
+        "confidence": "medium",
+        "counter_evidence_count": 1,
+        "extra_sections": {},
+        "first_seen": "<TIMESTAMP>",
+        "id": "claim_action_conditioning",
+        "last_updated": "<TIMESTAMP>",
+        "main_support": "Held-out evaluation runs on the v3 dataset show a consistent reduction in\nprediction error when the model is given the action context. Two independent\nreplications reproduce the effect.",
+        "main_weakness": "The effect size on the held-out v4 slice is smaller than on v3 and one ablation\nshowed the gap narrowing under a different sampling regime.",
+        "mentioned_in": [
+          "notes/scratch.md"
+        ],
+        "owner": "domen",
+        "parsed_from": "claims/claim_action_conditioning.md",
+        "source_missing": false,
+        "stale": false,
+        "statement": "Conditioning the model's predictions on the upcoming action sequence improves\npredictive quality on the validation slice relative to action-free baselines.",
+        "status": "provisionally_supported",
+        "status_timeline": [
+          {
+            "s": "provisionally_supported",
+            "t": "<TIMESTAMP>"
+          }
+        ],
+        "supporting_evidence_count": 2,
+        "timeline": [
+          {
+            "c": "medium",
+            "t": "<TIMESTAMP>"
+          }
+        ],
+        "title": "Action-conditioning improves predictive quality",
+        "what_would_change_my_mind": "A clean held-out evaluation showing no improvement from action conditioning at\nv5 scale, or a controlled study showing the v3/v4 gap is attributable to\ndistribution shift rather than the action signal."
+      },
+      {
+        "confidence": "high",
+        "counter_evidence_count": 0,
+        "extra_sections": {},
+        "first_seen": "<TIMESTAMP>",
+        "id": "claim_drift_barrier",
+        "last_updated": "<TIMESTAMP>",
+        "main_support": "The Lynch (2011) lower-bound theory predicts the inverse Ne relationship, and\nthe Bergeron et al. (2023) vertebrate dataset reports a roughly Ne^-0.6 scaling\nacross primates and rodents.",
+        "main_weakness": "Weinstein and Roy (2026) report that effective population size does not affect\nvertebrate mutation rate after controlling for life-history covariates,\nsuggesting the simple drift-barrier interpretation may be confounded.",
+        "mentioned_in": [
+          "papers/short_paper.pdf"
+        ],
+        "owner": "domen",
+        "parsed_from": "claims/claim_drift_barrier.md",
+        "source_missing": false,
+        "stale": false,
+        "statement": "Selection pushes mutation rates down only until further improvements yield\nfitness gains too small to overcome genetic drift. This produces an inverse\nrelationship between per-site mutation rate and effective population size,\nmodulated by functional genome size.",
+        "status": "provisionally_supported",
+        "status_timeline": [
+          {
+            "s": "provisionally_supported",
+            "t": "<TIMESTAMP>"
+          }
+        ],
+        "supporting_evidence_count": 2,
+        "timeline": [
+          {
+            "c": "high",
+            "t": "<TIMESTAMP>"
+          }
+        ],
+        "title": "The drift-barrier hypothesis predicts a Ne-dependent floor on mutation rate",
+        "what_would_change_my_mind": "A vertebrate dataset that fully controls for generation time, parental age, and\nreproductive longevity and still shows no residual Ne effect on per-generation\nmutation rate."
+      },
+      {
+        "confidence": "low",
+        "counter_evidence_count": 1,
+        "extra_sections": {},
+        "first_seen": "<TIMESTAMP>",
+        "id": "claim_scaling_priority",
+        "last_updated": "<TIMESTAMP>",
+        "main_support": "Early scaling-curve extrapolation suggested the regression closes by 1.5x\nparameter count.",
+        "main_weakness": "The 2x parameter ablation closed less than 10% of the v4 gap. The scaling-curve\nextrapolation broke down before reaching the target slice.",
+        "mentioned_in": [],
+        "owner": "domen",
+        "parsed_from": "claims/claim_scaling_priority.md",
+        "source_missing": false,
+        "stale": false,
+        "statement": "Doubling parameter count alone (without architectural changes) is sufficient to\nclose the v4 regression gap.",
+        "status": "unsupported",
+        "status_timeline": [
+          {
+            "s": "unsupported",
+            "t": "<TIMESTAMP>"
+          }
+        ],
+        "supporting_evidence_count": 0,
+        "timeline": [
+          {
+            "c": "low",
+            "t": "<TIMESTAMP>"
+          }
+        ],
+        "title": "Pure parameter scaling will resolve the eval regressions",
+        "what_would_change_my_mind": "A 2x or larger scaled run on a recent eval slice that closes the gap by >75%\nwithout any architectural changes."
+      }
+    ],
+    "cofr_version": "0.4.0",
+    "decisions": [
+      {
+        "based_on_evidence_ids": [],
+        "decision_statement": "We will not pursue further large-parameter ablations for the v4 regression\ninvestigation this quarter. Architecture-side experiments take priority.",
+        "depends_on_claim_ids": [
+          "claim_scaling_priority"
+        ],
+        "extra_sections": {},
+        "first_seen": "<TIMESTAMP>",
+        "id": "dec_deprioritize_scaling",
+        "last_updated": "<TIMESTAMP>",
+        "parsed_from": "decisions/dec_deprioritize_scaling.md",
+        "rationale": "The 2x-scaling result (ev_scaling_failure) closed <10% of the gap, contradicting\nthe early scaling-curve extrapolation that drove the prior plan. Pure scaling no\nlonger looks like the highest-EV intervention.",
+        "reopen_conditions": "A clean architecture-side win on v4 fails to close the gap, OR a new compute\nallocation makes 4x+ scaling cheaply feasible.",
+        "stale": false,
+        "status": "active",
+        "timestamp": "<TIMESTAMP>",
+        "title": "Deprioritize parameter scaling for v4 regression work"
+      }
+    ],
+    "evidence": [
+      {
+        "claim_links": [
+          {
+            "claim_id": "claim_action_conditioning",
+            "polarity": "supports"
+          }
+        ],
+        "created_at": "<TIMESTAMP>",
+        "data_source": "experiments/2026-04/replication/",
+        "evidence_type": "experiment_result",
+        "extra_sections": {},
+        "first_seen": "<TIMESTAMP>",
+        "id": "ev_action_replication",
+        "last_updated": "<TIMESTAMP>",
+        "parsed_from": "evidence/ev_action_replication.md",
+        "source_anchors": [],
+        "source_path": "",
+        "source_slug": "",
+        "source_title": "",
+        "stale": false,
+        "status": "active",
+        "strength": "medium",
+        "summary": "Independent replication of the v3 action-conditioning result with a different\nrandom seed schedule and a slightly modified loss weighting reproduced the\nprediction-error reduction (within 1 standard deviation of the original)."
+      },
+      {
+        "claim_links": [
+          {
+            "claim_id": "claim_drift_barrier",
+            "polarity": "supports"
+          }
+        ],
+        "created_at": "<TIMESTAMP>",
+        "data_source": "external/bergeron-2023",
+        "evidence_type": "paper_note",
+        "extra_sections": {},
+        "first_seen": "<TIMESTAMP>",
+        "id": "ev_bergeron_vertebrates",
+        "last_updated": "<TIMESTAMP>",
+        "parsed_from": "evidence/ev_bergeron_vertebrates.md",
+        "source_anchors": [],
+        "source_path": "",
+        "source_slug": "",
+        "source_title": "",
+        "stale": false,
+        "status": "active",
+        "strength": "medium",
+        "summary": "Bergeron et al. (2023) reported 40-fold variation in vertebrate per-generation\nmutation rates across primates and rodents, identifying generation time, age at\nmaturity, fecundity, and effective population size as important predictors.\nThe cross-species fit is consistent with a roughly Ne^-0.6 scaling."
+      },
+      {
+        "claim_links": [
+          {
+            "claim_id": "claim_action_conditioning",
+            "polarity": "opposes"
+          }
+        ],
+        "created_at": "<TIMESTAMP>",
+        "data_source": "experiments/2026-04/holdout_eval_v4/",
+        "evidence_type": "experiment_result",
+        "extra_sections": {},
+        "first_seen": "<TIMESTAMP>",
+        "id": "ev_holdout_drop",
+        "last_updated": "<TIMESTAMP>",
+        "parsed_from": "evidence/ev_holdout_drop.md",
+        "source_anchors": [],
+        "source_path": "",
+        "source_slug": "",
+        "source_title": "",
+        "stale": false,
+        "status": "active",
+        "strength": "high",
+        "summary": "On the v4 held-out slice, action-conditioned predictions did not significantly\noutperform the action-free baseline, contrary to the v3 results."
+      },
+      {
+        "claim_links": [
+          {
+            "claim_id": "claim_drift_barrier",
+            "polarity": "supports"
+          }
+        ],
+        "created_at": "<TIMESTAMP>",
+        "data_source": "papers/short_paper.pdf",
+        "evidence_type": "paper_note",
+        "extra_sections": {},
+        "first_seen": "<TIMESTAMP>",
+        "id": "ev_lynch_drift_barrier",
+        "last_updated": "<TIMESTAMP>",
+        "parsed_from": "evidence/ev_lynch_drift_barrier.md",
+        "source_anchors": [],
+        "source_path": "",
+        "source_slug": "",
+        "source_title": "",
+        "stale": false,
+        "status": "active",
+        "strength": "high",
+        "summary": "The Lynch (2011) lower-bound argument predicts an inverse relationship between\nper-site mutation rate and effective population size. Selection pushes mutation\nrates down only until further improvements yield fitness gains too small to\novercome drift. In eukaryotes the observed per-generation mutation rate has\nbeen reported to scale roughly as Ne^-0.6, though possibly as steeply as Ne^-1."
+      },
+      {
+        "claim_links": [
+          {
+            "claim_id": "claim_scaling_priority",
+            "polarity": "opposes"
+          }
+        ],
+        "created_at": "<TIMESTAMP>",
+        "data_source": "experiments/2026-04/scaling_2x/",
+        "evidence_type": "experiment_result",
+        "extra_sections": {},
+        "first_seen": "<TIMESTAMP>",
+        "id": "ev_scaling_failure",
+        "last_updated": "<TIMESTAMP>",
+        "parsed_from": "evidence/ev_scaling_failure.md",
+        "source_anchors": [],
+        "source_path": "",
+        "source_slug": "",
+        "source_title": "",
+        "stale": false,
+        "status": "active",
+        "strength": "high",
+        "summary": "A 2x-parameter run on the v4 eval slice closed less than 10% of the regression\ngap, far short of the 75%+ predicted by the early scaling-curve extrapolation."
+      },
+      {
+        "claim_links": [
+          {
+            "claim_id": "claim_action_conditioning",
+            "polarity": "supports"
+          }
+        ],
+        "created_at": "<TIMESTAMP>",
+        "data_source": "experiments/2026-03/v3_eval/",
+        "evidence_type": "experiment_result",
+        "extra_sections": {},
+        "first_seen": "<TIMESTAMP>",
+        "id": "ev_supporting_eval",
+        "last_updated": "<TIMESTAMP>",
+        "parsed_from": "evidence/ev_supporting_eval.md",
+        "source_anchors": [],
+        "source_path": "",
+        "source_slug": "",
+        "source_title": "",
+        "stale": false,
+        "status": "active",
+        "strength": "medium",
+        "summary": "On the v3 held-out slice, action-conditioned models reduced prediction error\nby 12% relative to the action-free baseline (n=8 seeds, p<0.01)."
+      }
+    ],
+    "experiments": [],
+    "last_refresh": "<TIMESTAMP>",
+    "open_questions": [
+      {
+        "blocking_impact": "We cannot confidently promote action conditioning as a load-bearing technique\nfor production training until the v3/v4 gap is explained.",
+        "blocking_severity": "high",
+        "extra_sections": {},
+        "first_seen": "<TIMESTAMP>",
+        "id": "q_holdout_robustness",
+        "last_updated": "<TIMESTAMP>",
+        "minimum_test": "Construct a matched-distribution v4 subset (re-weighted to match v3's input\ndistribution on the three covariates we already track) and rerun the action /\nno-action comparison. Cost: ~2 days, no new training runs.",
+        "parsed_from": "questions/q_holdout_robustness.md",
+        "priority": "high",
+        "proposed_resolution": "",
+        "question": "Is the v3-to-v4 effect-size drop on action conditioning attributable to\ndistribution shift in the held-out slice, or to a genuine erosion of the\nunderlying improvement?",
+        "related_claim_ids": [
+          "claim_action_conditioning"
+        ],
+        "stale": false,
+        "status": "open"
+      }
+    ],
+    "risks": [
+      {
+        "extra_sections": {},
+        "first_seen": "<TIMESTAMP>",
+        "id": "risk_eval_methodology",
+        "last_updated": "<TIMESTAMP>",
+        "parsed_from": "risks/risk_eval_methodology.md",
+        "recommended_resolution": "Audit the held-out splitting procedure against the v3 and v4 input\ndistributions. If a systematic gap is found, freeze new claims that depend on\nthe current methodology and redesign the protocol.",
+        "related_claim_ids": [
+          "claim_action_conditioning"
+        ],
+        "related_decision_ids": [],
+        "severity": "medium",
+        "source": "authored",
+        "stale": false,
+        "statement": "If the held-out eval methodology has a systematic flaw that masks distribution\nshift, several v3/v4 comparisons (including the action-conditioning one) are\nunreliable and would need to be redone with a different evaluation protocol.",
+        "status": "open"
+      }
+    ],
+    "schema_version": 2,
+    "warnings": []
+  },
+  "generated_at": "<TIMESTAMP>",
+  "project_path": "<PROJECT_PATH>",
+  "schema_version": 1
+}

@@ -1,0 +1,17 @@
+- id: q_critical
+  type: question
+  question: What is the highest-value experiment to run next?
+  priority: critical
+  blocking_severity: high
+  status: open
+  blocking_impact: Blocks the next planning cycle until resolved.
+  related_claim_ids:
+    - claim_conflict
+  proposed_resolution: Design a discriminating evaluation that separates the competing interpretations.
+  minimum_test: One holdout split on the largest perturbation family.
+- id: q_minor
+  type: question
+  question: Should the appendix be reorganised before the next draft?
+  priority: low
+  blocking_severity: low
+  status: open

@@ -1,0 +1,35 @@
+{
+  "cofr_version": "0.4.0",
+  "data": {
+    "claims": [
+      {
+        "confidence": "medium",
+        "counter_evidence_count": 1,
+        "id": "claim_action_conditioning",
+        "status": "provisionally_supported",
+        "supporting_evidence_count": 2,
+        "title": "Action-conditioning improves predictive quality"
+      },
+      {
+        "confidence": "high",
+        "counter_evidence_count": 0,
+        "id": "claim_drift_barrier",
+        "status": "provisionally_supported",
+        "supporting_evidence_count": 2,
+        "title": "The drift-barrier hypothesis predicts a Ne-dependent floor on mutation rate"
+      },
+      {
+        "confidence": "low",
+        "counter_evidence_count": 1,
+        "id": "claim_scaling_priority",
+        "status": "unsupported",
+        "supporting_evidence_count": 0,
+        "title": "Pure parameter scaling will resolve the eval regressions"
+      }
+    ],
+    "warnings": []
+  },
+  "generated_at": "<TIMESTAMP>",
+  "project_path": "<PROJECT_PATH>",
+  "schema_version": 1
+}

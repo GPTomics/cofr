@@ -1,0 +1,86 @@
+{
+  "cofr_version": "0.4.0",
+  "data": {
+    "ranking_rationale": [
+      "Open questions scored by priority (critical=4, high=3, medium=2, low=1)",
+      "  + blocking_severity (high=3, medium=2, low=1)",
+      "  + count of related claims with status mixed or unsupported.",
+      "Decisions with eroded basis get a base score bonus of +2.",
+      "Ties broken by ascending id.",
+      "q_critical: score 7 (priority 4 + severity 3 + 0 weak claim(s))",
+      "q_minor: score 2 (priority 1 + severity 1 + 0 weak claim(s))"
+    ],
+    "runner_ups": [
+      {
+        "eroded_basis": [],
+        "id": "q_minor",
+        "kind": "question",
+        "record": {
+          "blocking_impact": "",
+          "blocking_severity": "low",
+          "extra_sections": {},
+          "first_seen": "<TIMESTAMP>",
+          "id": "q_minor",
+          "last_updated": "<TIMESTAMP>",
+          "minimum_test": "",
+          "parsed_from": "questions.yaml#q_minor",
+          "priority": "low",
+          "proposed_resolution": "",
+          "question": "Should the appendix be reorganised before the next draft?",
+          "related_claim_ids": [],
+          "stale": false,
+          "status": "open"
+        },
+        "related_claims": [],
+        "score": 2,
+        "score_breakdown": {
+          "blocking_severity": 1,
+          "mixed_unsupported_claims": 0,
+          "priority": 1,
+          "stale_decision_bonus": 0
+        }
+      }
+    ],
+    "top_decision": {
+      "eroded_basis": [],
+      "id": "q_critical",
+      "kind": "question",
+      "record": {
+        "blocking_impact": "Blocks the next planning cycle until resolved.",
+        "blocking_severity": "high",
+        "extra_sections": {},
+        "first_seen": "<TIMESTAMP>",
+        "id": "q_critical",
+        "last_updated": "<TIMESTAMP>",
+        "minimum_test": "One holdout split on the largest perturbation family.",
+        "parsed_from": "questions.yaml#q_critical",
+        "priority": "critical",
+        "proposed_resolution": "Design a discriminating evaluation that separates the competing interpretations.",
+        "question": "What is the highest-value experiment to run next?",
+        "related_claim_ids": [
+          "claim_conflict"
+        ],
+        "stale": false,
+        "status": "open"
+      },
+      "related_claims": [
+        {
+          "confidence": "medium",
+          "id": "claim_conflict",
+          "status": "provisionally_supported"
+        }
+      ],
+      "score": 7,
+      "score_breakdown": {
+        "blocking_severity": 3,
+        "mixed_unsupported_claims": 0,
+        "priority": 4,
+        "stale_decision_bonus": 0
+      }
+    },
+    "warnings": []
+  },
+  "generated_at": "<TIMESTAMP>",
+  "project_path": "<PROJECT_PATH>",
+  "schema_version": 1
+}

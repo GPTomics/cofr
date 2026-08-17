@@ -1,0 +1,26 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.DS_Store
+**/.DS_Store
+.ipynb_checkpoints/
+examples/
+.coverage
+htmlcov/
+.pytest_cache/
+build/
+dist/
+.venv/
+venv/
+*.tmp
+
+# cofr state from running cofr against this repo itself for testing
+# (anchored to repo root, won't shadow any future src/artifacts paths)
+/.cofr/
+/artifacts/
+
+CLAUDE.md
+AGENTS.md
+ARCHITECTURE_PLAN.md
+M1_SPEC.md
+bugs.md

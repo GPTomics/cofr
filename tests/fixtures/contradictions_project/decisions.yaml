@@ -1,0 +1,7 @@
+- id: dec_pause_scaling
+  type: decision
+  title: Pause scaling
+  decision_statement: Pause scaling experiments pending a better evaluation design.
+  rationale: Cost is rising faster than certainty about the bottleneck.
+  depends_on_claim_ids:
+    - claim_conflict
